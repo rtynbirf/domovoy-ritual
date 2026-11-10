@@ -1,0 +1,26 @@
+# ДОМОВОЙ-ХОЗЯИН · аккаунт-широкий дозор. Такт каждые 30 минут: дом проверяет себя сам.
+# Человек не занимается тем, что машина может сделать без него (закон дома, S0-покой).
+name: "ДОМОВОЙ-ХОЗЯИН · аккаунт-свип"
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write   # пломба DOM-STATE.json
+
+concurrency:
+  group: dom-watch
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Свип дома: issues→0, PR→auto-merge, красные→перегон, нотификации→0"
+        env:
+          DOM_PAT: ${{ secrets.DOM_PAT }}
+          DOM_OWNER: rtynbirf
+        run: python3 scripts/dom_watch.py
