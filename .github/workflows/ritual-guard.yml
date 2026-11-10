@@ -1,0 +1,37 @@
+name: "Страж ритуала"
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * *"   # ежедневный дозор 03:17 UTC, прецедент дома
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "ДКА-приёмка артефактов"
+        run: python3 scripts/check_ritual.py
+
+      - name: "Такт автомата: enter→work→verify→seal→clean→status (дым)"
+        run: |
+          export HOUSE_FSM_DIR="$RUNNER_TEMP/house-fsm"
+          python3 house_fsm.py enter  --mandate "CI-дым: полный такт"
+          python3 house_fsm.py work   --task "проверка переходов на живом стенде"
+          python3 house_fsm.py verify --facts "каждый шаг CI = машинное свидетельство"
+          python3 house_fsm.py seal
+          python3 house_fsm.py clean
+          python3 house_fsm.py status
+
+      - name: "Гигиена: в репе нет файлов 0 байт (сентинел)"
+        run: |
+          empties=$(find . -type f -size 0 -not -path "./.git/*" | grep -v -E "\.(gitkeep|nojekyll)$" || true)
+          if [ -n "$empties" ]; then echo "ПУСТЫЕ ФАЙЛЫ (fail-closed): $empties"; exit 1; fi
+          echo "сентинел чист"
