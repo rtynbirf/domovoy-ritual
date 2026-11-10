@@ -123,12 +123,28 @@ for repo in repos:
                                                                  "state_reason": "completed"})
         report["issues_closed"].append(f"{full}#{issue['number']}")
 
-    # 3. Открытые PR от dependabot → auto-merge (решают required checks, не человек)
+    # 3. Открытые PR от dependabot → auto-merge (решают required checks, не человек).
+    #    Фолбэк: REST-квирк — auto_merge иногда молча не встаёт; если гейты уже
+    #    зелёные (mergeable_state=clean) — автомат сам делает переход DONE→CLEANED.
     for pr in paged_all(f"/repos/{full}/pulls?state=open", pages=3):
-        if pr["user"]["login"].startswith("dependabot"):
-            r = api(f"/repos/{full}/pulls/{pr['number']}", "PATCH", {"auto_merge": True})
-            if r and "__http_error__" not in r:
-                report["prs_automerged"] += 1
+        if not pr["user"]["login"].startswith("dependabot"):
+            continue
+        r = api(f"/repos/{full}/pulls/{pr['number']}", "PATCH", {"auto_merge": True})
+        armed = r and isinstance(r, dict) and r.get("auto_merge")
+        if armed:
+            report["prs_automerged"] += 1
+        else:
+            full_pr = api(f"/repos/{full}/pulls/{pr['number']}")
+            if full_pr and full_pr.get("mergeable") and full_pr.get("mergeable_state") == "clean":
+                m = api(f"/repos/{full}/pulls/{pr['number']}/merge", "PUT",
+                        {"merge_method": "squash",
+                         "commit_title": f"merge: {pr['title']} (dependabot, гейты зелёные)"})
+                if m and isinstance(m, dict) and m.get("merged"):
+                    report["prs_automerged"] += 1
+                else:
+                    report["violations"].append(f"PR {full}#{pr['number']}: merge отклонён")
+            else:
+                report["violations"].append(f"PR {full}#{pr['number']}: state={full_pr.get('mergeable_state') if full_pr else '?'} — оставлен гейтам")
 
     # 4. Красные latest-прогоны на default-ветке → один честный перегон
     db = repo["default_branch"]
