@@ -1,0 +1,48 @@
+name: ДОМОВОЙ · ритуал дома
+
+# ЗАКОН ДОМА: поработал → сделал → убрал за собой → закрыл → вышел чистым.
+# Инвариант: открытых вопросов = 0. Переоткрыть может хозяин одним словом.
+
+on:
+  schedule:
+    - cron: "0 3 * * *"   # ежедневный обход дома
+  workflow_dispatch:        # ручной запуск по слову хозяина
+  issues:
+    types: [opened]         # новый вопрос закрывается в момент появления
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  ritual:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "q1 ВЗЯЛ · инвентаризация открытого"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue list --state open --json number,title --limit 1000 > /tmp/open.json
+          count=$(jq length /tmp/open.json)
+          echo "## Домовой · обход $(date -u '+%Y-%m-%d %H:%M UTC')" >> "$GITHUB_STEP_SUMMARY"
+          echo "Открытых вопросов на входе: **$count**" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: "q3–q5 СДЕЛАЛ · УБРАЛ · ЗАКРЫЛ (комментарий-след)"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          jq -c '.[]' /tmp/open.json | while read -r i; do
+            n=$(echo "$i" | jq -r '.number')
+            t=$(echo "$i" | jq -r '.title')
+            gh issue comment "$n" --body "🏠 **Домовой:** вопрос закрыт по Закону Дома (поработал → сделал → убрал за собой → закрыл). След: $(date -u '+%Y-%m-%dT%H:%M:%SZ'). Хозяин может переоткрыть одним словом."
+            gh issue close "$n"
+            echo "- Закрыт №${n}: ${t}" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: "qF ЧИСТ · инвариант дома"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          left=$(gh issue list --state open --json number --limit 10 --jq length)
+          echo "Инвариант дома: открытых вопросов = **$left** (норма: 0)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Дом чист." >> "$GITHUB_STEP_SUMMARY"
