@@ -4,6 +4,15 @@
   <img src="banner.png" width="100%" alt="Штандарт domovoy-ritual: обсидиан и расплавленное золото, кузня rtynbirf" />
 </div>
 
+<!--ФОРЖ:МУЗА:НАЧАЛО-->
+<div align="center">
+  <img src="repo-muse.svg" width="100%" alt="Муза domovoy-ritual: картина кузни ПОЛИМАТ, раунд 9" />
+  <br/>
+  <img src="forge-divider.svg" width="62%" alt="разделитель кузни ПОЛИМАТ" />
+</div>
+<!--ФОРЖ:МУЗА:КОНЕЦ-->
+
+
 
 **Формула:** A = ПОРАБОТАЛ · СДЕЛАЛ · УБРАЛ ЗА СОБОЙ · ЗАКРЫЛ · ВЫШЕЛ ЧИСТЫМ
 
@@ -174,3 +183,10 @@ python3 house_fsm.py status                                  # отчёт: те�
 Аккаунт-широкая машина — **ДОМОВОЙ-ХОЗЯИН** (`scripts/dom_watch.py` + `dom-watch.yml`,
 такт каждые 30 минут). Ключ дома `DOM_PAT` лежит libsodium sealed box'ом в Actions
 secret'е: машина работает без человека и без ключей в коде.
+
+<!--ФОРЖ:ПОДВАЛ-->
+---
+
+<div align="center">
+  <sub>◆ картина и штандарт — ручная ковка <a href="https://github.com/rtynbirf">КУЗНИ ПОЛИМАТ</a> · ЧЕЛОВЕК=АККАУНТ=PID1 ◆</sub>
+</div>
