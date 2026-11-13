@@ -8,17 +8,18 @@ M = (S, Σ, δ, s0, F) — детерминированный автомат с�
 Авария в любой точке: S6 → recover → S3.
 Ethos: stdlib-only, офлайн-пригодность, ноль зависимостей (этика аккаунта).
 
-Команды:
-  enter   S0→S1   токен в tmp с правами 600, мандат, таймстемп
-  work    S1→S2   фиксация дел по мандату (аргумент: --task "что делаю")
-  verify  S2→S3   сборка машинных свидетельств (SHA256, факты)
-  seal    S3→S4   пломба: журнал + бандл-дайджест + ворклог-строка
-  clean   S4→S5   уборка: токены стёрты, tmp пуст, проверка чистоты
-  status  S5→S0   подтверждение покоя (или REJECTED)
-  abort   *→S6    аварийный вход: причина обязательна (--reason "...")
-  recover S6→S3   выход из аварии (только с задокументированным ущербом)
-  state           показать текущее состояние автомата
-  replay          показать журнал тактов (append-only)
+Команды (одна команда = один переход δ, устав §1.2):
+  enter     S0→S1   токен в tmp с правами 600, мандат, таймстемп
+  work      S1→S2   фиксация дел по мандату (аргумент: --task "что делаю")
+  verify    S2→S3   сборка машинных свидетельств (SHA256, факты)
+  seal      S3→S4   пломба: журнал + бандл-дайджест + ворклог-строка
+  clean     →S5     уборка: токены стёрты, tmp пуст (из S4/S1¹/S2¹/S3; из S5 — идемпотентно →S0, §4)
+  status    S5→S0   подтверждение покоя (или REJECTED)
+  heartbeat *→*     nop-пульс: автомат жив, состояние не меняется, запись в журнал
+  abort     *→S6    аварийный вход: причина обязательна (--reason "..."); из S0 — nop
+  recover   S6→S3   выход из аварии (только с задокументированным ущербом, G7)
+  state             показать текущее состояние автомата
+  replay            показать журнал тактов (append-only)
 """
 from __future__ import annotations
 import argparse, hashlib, json, os, stat, sys, time
@@ -35,13 +36,19 @@ S0, S1, S2, S3, S4, S5, S6 = "S0", "S1", "S2", "S3", "S4", "S5", "S6"
 NAMES = {S0: "ПОКОЙ", S1: "ВХОД", S2: "ДЕЛО", S3: "СВЕРКА", S4: "ПЛОМБА", S5: "УБОРКА", S6: "АВАРИЯ"}
 
 # δ: (from, event) -> to  — запрещённые пары отсутствуют => REJECTED
+# v1.1 (2026-11-13): приведено к таблице §1.2 устава по фактам прогонов ОПВ-чужака.
+# Было 19 пар; стало 33 (см. VERIFICATION-2026-11-13.md, матрицы ДО/ПОСЛЕ).
 DELTA = {
     (S0, "enter"): S1,
-    (S1, "work"): S2, (S2, "work"): S2,
-    (S2, "verify"): S3, (S3, "verify"): S3,
+    (S1, "work"): S2, (S2, "work"): S2, (S3, "work"): S2,   # ² свидетельство не полно — вернуться работать
+    (S2, "verify"): S3, (S3, "verify"): S3, (S6, "verify"): S3,  # ³ аварийный путь: свидетельства ущерба → S3
     (S3, "seal"): S4, (S4, "seal"): S4,
-    (S4, "clean"): S5, (S1, "clean"): S5,
-    (S5, "clean"): S5, (S5, "status"): S0,
+    (S4, "clean"): S5, (S1, "clean"): S5, (S2, "clean"): S5,  # ¹ ранний выход (§1.2 сноска 1)
+    (S3, "clean"): S5, (S6, "clean"): S5,
+    (S5, "clean"): S0,           # §4 «двойная уборка»: идемпотентно, подтверждение чистоты → S0
+    (S5, "status"): S0,
+    (S0, "heartbeat"): S0, (S1, "heartbeat"): S1, (S2, "heartbeat"): S2, (S3, "heartbeat"): S3,
+    (S4, "heartbeat"): S4, (S5, "heartbeat"): S5, (S6, "heartbeat"): S6,  # nop-пульс (Σ)
     (S0, "abort"): S0,          # nop: покой трогать нечем
     (S1, "abort"): S6, (S2, "abort"): S6, (S3, "abort"): S6, (S4, "abort"): S6,
     (S5, "abort"): S6, (S6, "abort"): S6,
@@ -91,7 +98,7 @@ class Automaton:
         key = (self.state, event)
         target = DELTA.get(key)
         if target is None and not force:
-            self._log(event, "REJECTED", f"S{NAMES[self.state]}×{event}: переход не определён δ")
+            self._log(event, "REJECTED", f"{self.state}×{event}: переход не определён δ")  # §1.2: REJECTED: S{from}×{event}
             print(f"  [REJECTED] {NAMES[self.state]} × {event} — такой переход не определён (устав §1.2)")
             return False
         self._log(event, "OK" if target else "NOP", detail)
@@ -128,7 +135,7 @@ class Automaton:
         return True
 
     def g_clean_exit(self) -> tuple[bool, list]:
-        """G6: дом чист — tmp пуст, пломбы есть, сид-файлы удалены."""
+        """G6: дом чист — tmp пуст (пломбы хранятся в seals/ и покою не мешают)."""
         leftovers = []
         if TMP_SESS.exists():
             leftovers += [str(p) for p in TMP_SESS.iterdir()]
@@ -196,18 +203,32 @@ class Automaton:
             print(f"  [REJECTED] покой недостижим, остались: {leftovers} — повторите clean")
 
     def abort(self, reason: str) -> None:
-        self._log("abort", "OK", f"причина: {reason}")
-        (TMP_SESS / "incident.txt").write_text(f"{utc()} {reason}\n", encoding="utf-8")
-        self.state = S6
-        self._persist()
+        if not reason:
+            print("  [REJECTED] abort требует --reason (факт, не настроение)")
+            return
+        if self.state == S0:
+            self._transition("abort", f"nop: покой трогать нечем; причина отклонена: {reason[:60]}")
+            return
+        with open(TMP_SESS / "incident.txt", "a", encoding="utf-8") as f:
+            f.write(f"{utc()} {reason}\n")
+        self._transition("abort", f"причина: {reason}")
         print(f"  [S6] АВАРИЯ: {reason}. Выход — recover (G7: ущерб уже записан в incident).")
 
     def recover(self) -> None:
+        if self.state != S6:
+            self._log("recover", "REJECTED", f"{self.state}×recover: δ определяет recover только из S6")
+            print("  [REJECTED] recover определён только из S6 (δ §1.2)")
+            return
         inc = TMP_SESS / "incident.txt"
         if not inc.exists():
+            self._log("recover", "REJECTED", "G7: нет записи ущерба — из S6 выйти нельзя")
             print("  [REJECTED] G7: нет записи ущерба — из S6 выйти нельзя (устав §1.2)")
             return
         self._transition("recover", inc.read_text().strip()[:120])
+
+    def heartbeat(self) -> None:
+        """nop-пульс (Σ): автомат жив, состояние не меняется, свидетельство в журнал (A2)."""
+        self._transition("heartbeat", "пульс дома: автомат жив")
 
     # ---------- интроспекция ----------
     def show(self) -> None:
@@ -226,7 +247,7 @@ class Automaton:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="HOUSE-FSM · ритуал дома как конечный автомат")
-    ap.add_argument("command", choices=["enter", "work", "verify", "seal", "clean", "status", "abort", "recover", "state", "replay"])
+    ap.add_argument("command", choices=["enter", "work", "verify", "seal", "clean", "status", "heartbeat", "abort", "recover", "state", "replay"])
     ap.add_argument("--mandate", default="", help="мандат сеанса: какие репо/действия")
     ap.add_argument("--task", default="", help="что сделано на шаге work")
     ap.add_argument("--facts", default="", help="машинное свидетельство на шаге verify")
@@ -240,6 +261,7 @@ def main() -> int:
     elif a.command == "seal":     m.seal()
     elif a.command == "clean":    m.clean()
     elif a.command == "status":   m.status()
+    elif a.command == "heartbeat": m.heartbeat()
     elif a.command == "abort":
         if not a.reason:
             print("  [REJECTED] abort требует --reason (факт, не настроение)")
