@@ -22,6 +22,18 @@
 | 31 | 5 | 1 | 2026-11-28 | 1 |
 <!--ФОРЖ:ПАСПОРТ:КОНЕЦ-->
 
+# domovoy-ritual
+
+<div align="center">
+
+<a href="https://github.com/rtynbirf/domovoy-ritual"><img src="banner.png" width="100%" alt="domovoy-ritual — штандарт мастерской в каноне ORNAMENTAL MYTHO-REALISM"></a>
+
+</div>
+
+
+
+
+
 # ЗАКОН ДОМА · Домовой
 
 <p align="center"><img src="https://cdn.jsdelivr.net/gh/rtynbirf/domovoy-ritual@main/.github/social-preview.png" alt="domovoy-ritual" width="100%"></p>
