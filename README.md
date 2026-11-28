@@ -1,26 +1,38 @@
-# ЗАКОН ДОМА · Домовой
-
 <div align="center">
-  <img src="banner.png" width="100%" alt="Штандарт domovoy-ritual: обсидиан и расплавленное золото, кузня rtynbirf" />
+
+<a href="https://github.com/rtynbirf/domovoy-ritual"><img src="banner.png" width="100%" alt="domovoy-ritual — штандарт мастерской в каноне ORNAMENTAL MYTHO-REALISM"></a>
+
 </div>
 
 <!--ФОРЖ:МУЗА:НАЧАЛО-->
 <div align="center">
-  <img src="repo-muse.svg" width="100%" alt="Муза domovoy-ritual: мастерская КЛИМТ · ЗОЛОТАЯ ФАЗА, кузня ПОЛИМАТ, раунд 12 · REVE=РЕВО" />
+  <img src="https://cdn.jsdelivr.net/gh/rtynbirf/domovoy-ritual@main/repo-muse.svg" width="100%" alt="Муза domovoy-ritual: мастерская КЛИМТ · ЗОЛОТАЯ ФАЗА, кузня ПОЛИМАТ, раунд 12 · REVE=РЕВО" />
   <br/>
-  <img src="forge-divider.svg" width="62%" alt="делитель мастерской КЛИМТ · ЗОЛОТАЯ ФАЗА" />
+  <img src="https://cdn.jsdelivr.net/gh/rtynbirf/domovoy-ritual@main/forge-divider.svg" width="62%" alt="делитель мастерской КЛИМТ · ЗОЛОТАЯ ФАЗА" />
 </div>
 <!--ФОРЖ:МУЗА:КОНЕЦ-->
 
 <!--ФОРЖ:ПАСПОРТ:НАЧАЛО-->
 <div align="center">
-  <img src="revo-page.svg" width="100%" alt="РЕВО-паспорт страницы domovoy-ritual: строение файлов, лексикон, числа — по фактическому контенту" />
+  <img src="revo-page.svg" width="100%" alt="РЕВО-паспорт страницы domovoy-ritual №27 в каноне ORNAMENTAL MYTHO-REALISM: орнаментальная решётка, медальон-миф, строение файлов, лексикон — по фактическому контенту" />
 </div>
 
 | ФАЙЛОВ | ПАПОК | КОММИТОВ | ОБНОВЛЕНО | РЕЛИЗОВ |
 |---:|---:|---:|---|---:|
-| 20 | 2 | 26 | 2026-11-16 | 1 |
+| 31 | 5 | 1 | 2026-11-28 | 1 |
 <!--ФОРЖ:ПАСПОРТ:КОНЕЦ-->
+
+# ЗАКОН ДОМА · Домовой
+
+<p align="center"><img src="https://cdn.jsdelivr.net/gh/rtynbirf/domovoy-ritual@main/.github/social-preview.png" alt="domovoy-ritual" width="100%"></p>
+
+<div align="center">
+  <img src="banner.png" width="100%" alt="Штандарт domovoy-ritual: обсидиан и расплавленное золото, кузня rtynbirf" />
+</div>
+
+
+
+
 
 
 
